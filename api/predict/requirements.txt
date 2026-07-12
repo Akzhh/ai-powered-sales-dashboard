@@ -1,7 +1,7 @@
 flask
 flask-cors
-openpyxl
-reportlab
+pandas
+scikit-learn
+joblib
 psycopg2-binary
-PyJWT
 werkzeug

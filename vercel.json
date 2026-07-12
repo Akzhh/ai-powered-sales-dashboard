@@ -1,10 +1,21 @@
 {
   "functions": {
     "api/index.py": {
-      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**}"
+      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**,models/**,temp_deps/**,api/predict/**,train_model.py}"
+    },
+    "api/predict/index.py": {
+      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**,temp_deps/**,train_model.py}"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/predict",
+      "destination": "/api/predict/index.py"
+    },
+    {
+      "source": "/api/model/info",
+      "destination": "/api/predict/index.py"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.py"

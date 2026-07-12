@@ -2,15 +2,18 @@ import os
 import sys
 import re
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 
-# Add the current directory to sys.path so we can import local modules
+# Add the 'api' directory to sys.path so we can import shared local modules
 current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+api_dir = os.path.dirname(current_dir)
+if api_dir not in sys.path:
+    sys.path.insert(0, api_dir)
 
 from services.database import init_db
+from services.model_loader import ModelLoader
+from routes.prediction import prediction_bp
 
 # Configure logging
 logging.basicConfig(
@@ -37,43 +40,21 @@ if os.environ.get("ALLOWED_ORIGINS"):
 
 CORS(app, supports_credentials=True, origins=cors_origins)
 
-# Import blueprints
-from routes.auth import auth_bp
-from routes.sales import sales_bp
-from routes.upload import upload_bp
-from routes.exports import exports_bp
+# Register only the prediction blueprint
+app.register_blueprint(prediction_bp)
 
-# Register blueprints
-app.register_blueprint(auth_bp)
-app.register_blueprint(sales_bp)
-app.register_blueprint(upload_bp)
-app.register_blueprint(exports_bp)
-
-
-# Health check endpoint
-@app.route('/api/health')
+# Health check specifically for prediction service
+@app.route('/api/predict/health')
 def health():
     return jsonify({
         'status': 'ok',
-        'message': 'Backend running successfully'
+        'message': 'Prediction Serverless Function running successfully'
     })
-
 
 # API 404 handler
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({'error': 'Endpoint not found'}), 404
-
-
-# Startup warmup
-def warmup():
-    try:
-        logger.info("Initializing database...")
-        init_db()
-    except Exception as e:
-        logger.error(f"Database initialization failed (maybe DATABASE_URL is not set): {e}")
-
-    logger.info("Warmup complete. Main API is ready.")
 
 # Perform warmup lazily to avoid crashing during Vercel build
 warmup_done = False
@@ -83,8 +64,17 @@ def do_warmup():
     global warmup_done
     if not warmup_done:
         warmup_done = True
-        warmup()
+        try:
+            logger.info("Initializing database connection for predict function...")
+            init_db()
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
 
+        try:
+            logger.info("Caching machine learning model...")
+            ModelLoader.load_model()
+        except Exception as e:
+            logger.error(f"Model caching failed: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
