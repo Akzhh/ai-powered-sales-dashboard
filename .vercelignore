@@ -1,7 +1,7 @@
 # Vercel deployment exclusions
 # These files are ignored during Vercel upload completely
 
-frontend/node_modules/
+node_modules/
 temp_deps/
 .git/
 .venv/

@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/*.py": {
-      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**,temp_deps/**,train_model.py}"
+      "excludeFiles": "{src/**,public/**,node_modules/**,dist/**,web_app/**,ai dashboard/**,dataset/**,temp_deps/**,train_model.py}"
     }
   },
   "rewrites": [

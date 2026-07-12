@@ -28,9 +28,12 @@ env/
 
 # Node
 node_modules/
-frontend/dist/
+dist/
 temp_deps/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*
