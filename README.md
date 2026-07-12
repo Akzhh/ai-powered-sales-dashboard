@@ -27,8 +27,8 @@ A modern fullstack web application that uses **Machine Learning** (Linear Regres
 
 ```
 AI_SALES_FORECASTING_DASHBOARD/
-├── backend/                # Flask modular backend
-│   ├── app.py              # Main entry point (registers blueprints, warmup hooks)
+├── web_app/                # Flask modular monolithic app
+│   ├── app.py              # Main entry point (registers blueprints, serves React static files)
 │   ├── routes/             # Blueprints for routing logic
 │   │   ├── auth.py         # Auth sessions
 │   │   ├── sales.py        # CRUD transactions & dashboard stats
@@ -41,12 +41,13 @@ AI_SALES_FORECASTING_DASHBOARD/
 │   │   ├── training.py     # Background thread model trainer
 │   │   └── forecast.py     # Prediction handler
 │   ├── requirements.txt    # Python dependencies
+│   ├── static/             # Built production React frontend files (served by Flask)
 │   ├── dataset/
 │   │   └── current_dataset.csv # Uploaded dataset
 │   └── models/
 │       └── sales_model.pkl # Pickled model
 │
-├── client/                 # React frontend (Vite)
+├── client/                 # React frontend (Vite) - used for standalone local development
 │   ├── package.json
 │   ├── vite.config.js      # Dev proxy → Flask :5000
 │   ├── index.html
@@ -71,11 +72,11 @@ AI_SALES_FORECASTING_DASHBOARD/
 
 ---
 
-### 1. Start the Backend (Flask)
+### 1. Start the Monolithic App (Flask + React)
 
 ```bash
-# Navigate to backend directory
-cd backend
+# Navigate to web_app directory
+cd web_app
 
 # Create and activate virtual environment (recommended)
 # On Windows:
@@ -91,11 +92,13 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The backend will start on **http://localhost:5000**
+The application will start on **http://localhost:5000** containing both API endpoints and the React frontend.
 
 ---
 
-### 2. Start the Frontend (React)
+### 2. Standalone Frontend Development (Optional)
+
+If you wish to run the Vite dev server with Hot Module Replacement (HMR):
 
 Open a **new terminal**:
 
@@ -110,13 +113,13 @@ npm install
 npm run dev
 ```
 
-The frontend will start on **http://localhost:5173**
+The dev server will run on **http://localhost:5173** and automatically proxy API calls to the Flask backend on port 5000.
 
 ---
 
 ### 3. Open the Application
 
-Open your browser and go to: **http://localhost:5173**
+Open your browser and go to: **http://localhost:5000** (or **http://localhost:5173** if running the standalone Vite dev server).
 
 #### Default Login Credentials
 - **Username:** `admin`
@@ -136,11 +139,10 @@ Month,Sales
 ...
 ```
 
-The model will automatically retrain when a new CSV is uploaded.
+The model will automatically retrain in a background thread when a new CSV is uploaded.
 
 ## Notes
 
-- The SQLite database (`sales.db`) is auto-created on first run
-- The ML model (`sales_model.pkl`) is auto-trained if not found
-- The Vite dev server proxies `/api/*` requests to Flask on port 5000
-- Both servers must be running simultaneously for the app to work
+- The SQLite database (`sales.db`) is auto-created on first run.
+- The ML model (`sales_model.pkl`) is auto-trained in the background if not found on startup.
+- The monolithic Flask app serves the static frontend from `static/` automatically on port 5000.
