@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-sales-forecasting-backend
+    env: python
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: gunicorn --chdir server app:app
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ENV
+        value: production

@@ -1,0 +1,24 @@
+Application
+Because your frontend is nested directly inside the Flask app (/static folder), you only need to host the backend. The hosting platform will serve both your API and your website interface automatically.
+
+1. Backend & Frontend Hosting (Python/Flask)
+Render (Render.com) [Recommended]
+Cost: Free tier available (web services spin down when idle but wake up on request).
+Setup: Connects to your GitHub repository and deploys automatically whenever you push code.
+Railway (Railway.app)
+Cost: Low cost (around $5/month, very generous free developer credits to start).
+Setup: Extremely fast setup and robust deployment.
+PythonAnywhere
+Cost: Free tier available.
+Setup: Designed specifically for hosting Python applications.
+2. Database Hosting
+Supabase (Supabase.com) [Recommended]
+Cost: Free tier includes a hosted PostgreSQL database.
+Setup: Perfect for hosting relational sales records with connection strings readily available.
+Neon (Neon.tech)
+Cost: Free tier serverless PostgreSQL.
+Setup: Fast and pairs perfectly with Python apps.
+🚀 Next Steps to Make It Live
+Create the GitHub repository (as we initialized locally above) and push your code.
+Set up a free Database on Supabase or Neon and get the connection URL.
+Link your repository to Render.com, configure the environment variables, and hit deploy.

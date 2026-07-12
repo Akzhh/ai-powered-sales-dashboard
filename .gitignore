@@ -1,0 +1,32 @@
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local sqlite databases
+*.db
+
+# Temporary generated reports
+*.pdf
+*.xlsx
+temp_sales_report.*
+Sales_Report.*
+
+# Environment and IDE folders
+.gemini/
+.idea/
+.vscode/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+client/dist/
+
+# Server temp files
+server/tmp/
+
+# Trained model (auto-generated)
+server/models/sales_model.pkl
