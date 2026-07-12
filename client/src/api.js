@@ -95,13 +95,28 @@ export async function getDataset() {
 }
 
 // ----------------------------------------
-// AI Prediction
+// AI Prediction & Training
 // ----------------------------------------
 export async function predictSales(month) {
   const res = await request('/predict', {
     method: 'POST',
     body: JSON.stringify({ month: parseInt(month) }),
   });
+  return { ok: res.ok, data: await res.json() };
+}
+
+export async function getModelInfo() {
+  const res = await request('/model/info');
+  return { ok: res.ok, data: await res.json() };
+}
+
+export async function getTrainStatus() {
+  const res = await request('/train/status');
+  return { ok: res.ok, data: await res.json() };
+}
+
+export async function trainModel() {
+  const res = await request('/train', { method: 'POST' });
   return { ok: res.ok, data: await res.json() };
 }
 

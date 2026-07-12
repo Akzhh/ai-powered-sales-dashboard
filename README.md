@@ -27,15 +27,24 @@ A modern fullstack web application that uses **Machine Learning** (Linear Regres
 
 ```
 AI_SALES_FORECASTING_DASHBOARD/
-├── server/                 # Flask backend
-│   ├── app.py              # REST API (auth, CRUD, prediction, exports)
-│   ├── database.py         # SQLite database layer
-│   ├── model.py            # ML model (predict, train, retrain)
+├── backend/                # Flask modular backend
+│   ├── app.py              # Main entry point (registers blueprints, warmup hooks)
+│   ├── routes/             # Blueprints for routing logic
+│   │   ├── auth.py         # Auth sessions
+│   │   ├── sales.py        # CRUD transactions & dashboard stats
+│   │   ├── prediction.py   # Forecasts & model metadata info
+│   │   ├── upload.py       # CSV upload & background training triggers
+│   │   └── exports.py      # PDF & Excel report exports
+│   ├── services/           # Service layer
+│   │   ├── database.py     # SQLite & PostgreSQL database connector
+│   │   ├── model_loader.py # Cached thread-safe model loader
+│   │   ├── training.py     # Background thread model trainer
+│   │   └── forecast.py     # Prediction handler
 │   ├── requirements.txt    # Python dependencies
 │   ├── dataset/
-│   │   └── sales.csv       # Training data
+│   │   └── current_dataset.csv # Uploaded dataset
 │   └── models/
-│       └── sales_model.pkl # Trained model (auto-generated)
+│       └── sales_model.pkl # Pickled model
 │
 ├── client/                 # React frontend (Vite)
 │   ├── package.json
@@ -65,13 +74,15 @@ AI_SALES_FORECASTING_DASHBOARD/
 ### 1. Start the Backend (Flask)
 
 ```bash
-# Navigate to server directory
-cd server
+# Navigate to backend directory
+cd backend
 
 # Create and activate virtual environment (recommended)
+# On Windows:
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate
+# On macOS/Linux:
+# source venv/bin/activate
 
 # Install Python dependencies
 pip install -r requirements.txt
