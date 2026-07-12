@@ -1,24 +1,14 @@
-from flask import Blueprint, request, jsonify, session
-import csv
-from pathlib import Path
+from flask import Blueprint, request, jsonify
 from services.forecast import predict_sales
-from services.database import get_latest_model_metadata
+from services.database import get_latest_model_metadata, get_dataset_rows
+from services.auth_service import require_auth
 
 prediction_bp = Blueprint('prediction', __name__)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "dataset" / "current_dataset.csv"
-
-
-def check_auth():
-    return session.get('logged_in', False)
-
 
 @prediction_bp.route('/api/predict', methods=['POST'])
+@require_auth
 def predict():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json() or {}
     month = data.get('month')
 
@@ -42,10 +32,8 @@ def predict():
 
 
 @prediction_bp.route('/api/model/info', methods=['GET'])
+@require_auth
 def model_info():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         metadata = get_latest_model_metadata()
         if metadata:
@@ -62,22 +50,11 @@ def model_info():
 
 
 @prediction_bp.route('/api/dataset', methods=['GET'])
+@require_auth
 def get_dataset():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
+    """Return dataset rows from the database (uploaded via CSV)."""
     try:
-        if not CSV_PATH.exists():
-            return jsonify([])
-
-        data = []
-        with open(CSV_PATH, mode='r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                data.append({
-                    'Month': int(row['Month']),
-                    'Sales': float(row['Sales'])
-                })
+        data = get_dataset_rows()
         return jsonify(data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -1,8 +1,8 @@
 import os
+import re
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from pathlib import Path
 from services.database import init_db
 from services.model_loader import ModelLoader
 
@@ -17,27 +17,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Flask App Setup
-BASE_DIR = Path(__file__).resolve().parent
-TMP_DIR = BASE_DIR / "tmp"
-TMP_DIR.mkdir(exist_ok=True)
-
-import re
-
-# Set static folder to serve React frontend files
-app = Flask(__name__, static_folder='static', static_url_path='')
+app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')
-
-# Configure session cookie settings for cross-origin authentication in production
-# Automatically detect production environments like PythonAnywhere, Render, or database URL configurations
-is_production = (
-    os.environ.get('ENV') == 'production' or 
-    os.environ.get('DATABASE_URL') is not None or 
-    'pythonanywhere' in os.environ.get('HOME', '').lower()
-)
-
-if is_production:
-    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-    app.config['SESSION_COOKIE_SECURE'] = True
 
 # Enable CORS for React dev server, production domains, and any Vercel deployments
 cors_origins = [
@@ -65,18 +46,20 @@ app.register_blueprint(upload_bp)
 app.register_blueprint(exports_bp)
 
 
-# Serve static React built index.html
+# Health check endpoint
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    return jsonify({
+        'status': 'ok',
+        'service': 'AI Sales Forecasting Dashboard API',
+        'version': '2.0.0'
+    })
 
 
-# SPA routing fallback: redirect non-API 404s to React router (index.html)
+# API 404 handler
 @app.errorhandler(404)
 def not_found(e):
-    if request.path.startswith('/api/'):
-        return jsonify({'error': 'Not Found'}), 404
-    return app.send_static_file('index.html')
+    return jsonify({'error': 'Endpoint not found'}), 404
 
 
 # Startup warmup
@@ -85,6 +68,7 @@ def warmup():
     init_db()
     logger.info("Caching machine learning model...")
     ModelLoader.load_model()
+    logger.info("Warmup complete. API is ready.")
 
 
 # Perform warmup under app context on startup

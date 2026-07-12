@@ -4,7 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Local sqlite databases
+# Local sqlite databases (legacy)
 *.db
 
 # Temporary generated reports
@@ -21,12 +21,15 @@ Sales_Report.*
 venv/
 env/
 
+# Environment files
+.env
+.env.local
+.env.production
+
 # Node
 node_modules/
 client/dist/
 
-# Server temp files
-server/tmp/
-
-# Trained model (auto-generated)
-server/models/sales_model.pkl
+# OS files
+.DS_Store
+Thumbs.db

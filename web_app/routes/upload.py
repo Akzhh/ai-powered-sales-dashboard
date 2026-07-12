@@ -1,24 +1,18 @@
-from flask import Blueprint, request, jsonify, session
-from pathlib import Path
-from services.training import start_training, TrainingState
-from services.database import log_uploaded_dataset
+import io
+import csv
+import logging
+from flask import Blueprint, request, jsonify
+from services.database import log_uploaded_dataset, save_dataset_rows
+from services.auth_service import require_auth
 
 upload_bp = Blueprint('upload', __name__)
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "dataset" / "current_dataset.csv"
-
-
-def check_auth():
-    return session.get('logged_in', False)
+logger = logging.getLogger(__name__)
 
 
 @upload_bp.route('/api/upload', methods=['POST'])
 @upload_bp.route('/api/upload-csv', methods=['POST'])  # Backward compatibility
+@require_auth
 def upload_dataset():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
 
@@ -40,58 +34,33 @@ def upload_dataset():
         if 'month' not in header or 'sales' not in header:
             return jsonify({'error': 'CSV must have "Month" and "Sales" columns'}), 400
 
-        # Save to backend/dataset/current_dataset.csv
-        CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-        CSV_PATH.write_text(content)
+        # Parse CSV rows
+        reader = csv.DictReader(io.StringIO(content))
+        rows = []
+        for row in reader:
+            try:
+                month_val = int(row.get('Month', row.get('month', '')))
+                sales_val = float(row.get('Sales', row.get('sales', '')))
+                rows.append({'month': month_val, 'sales': sales_val})
+            except (ValueError, TypeError):
+                continue  # Skip rows with invalid data
 
-        record_count = len([l for l in lines if l.strip()]) - 1
+        if len(rows) < 2:
+            return jsonify({'error': 'CSV must contain at least 2 valid data rows'}), 400
 
-        # Log to DB
+        record_count = len(rows)
+
+        # Store dataset rows into database
+        save_dataset_rows(rows)
+
+        # Log upload metadata
         log_uploaded_dataset(file.filename, record_count)
-
-        # Trigger background training
-        started = start_training()
-
-        msg = (
-            f"CSV uploaded successfully. Background model training started with {record_count} records."
-            if started
-            else "CSV uploaded successfully. Model training is already running in background."
-        )
 
         return jsonify({
             'success': True,
-            'message': msg,
+            'message': f'CSV uploaded and validated. {record_count} records stored in database.',
             'rows': record_count
         })
     except Exception as e:
+        logger.error(f"CSV upload error: {e}")
         return jsonify({'error': f'Failed to process CSV: {str(e)}'}), 500
-
-
-@upload_bp.route('/api/train', methods=['POST'])
-def train_model():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    try:
-        if not CSV_PATH.exists():
-            return jsonify({'error': 'No training dataset uploaded yet. Please upload a dataset first.'}), 400
-
-        started = start_training()
-        if started:
-            return jsonify({'success': True, 'message': 'Model training started in background.'})
-        else:
-            return jsonify({'success': False, 'message': 'Model training is already in progress.'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@upload_bp.route('/api/train/status', methods=['GET'])
-def train_status():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    try:
-        state = TrainingState.get_status()
-        return jsonify(state)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500

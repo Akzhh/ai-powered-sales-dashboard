@@ -1,18 +1,42 @@
 // ==========================================
-// Centralized API Client
+// Centralized API Client — JWT Authentication
 // ==========================================
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// ----------------------------------------
+// Token Management
+// ----------------------------------------
+function getAuthToken() {
+  return localStorage.getItem('auth_token');
+}
+
+function setAuthToken(token) {
+  localStorage.setItem('auth_token', token);
+}
+
+function removeAuthToken() {
+  localStorage.removeItem('auth_token');
+}
+
+// ----------------------------------------
+// Core Request Helper
+// ----------------------------------------
 async function request(url, options = {}) {
+  const token = getAuthToken();
+
   const config = {
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
     ...options,
   };
+
+  // Add Authorization header if token exists
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
 
   // Don't set Content-Type for FormData (file uploads)
   if (options.body instanceof FormData) {
@@ -31,17 +55,46 @@ export async function login(username, password) {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });
-  return { ok: res.ok, data: await res.json() };
+  const data = await res.json();
+
+  // Store token on successful login
+  if (res.ok && data.token) {
+    setAuthToken(data.token);
+  }
+
+  return { ok: res.ok, data };
 }
 
 export async function logout() {
   const res = await request('/logout', { method: 'POST' });
-  return { ok: res.ok, data: await res.json() };
+  const data = await res.json();
+
+  // Always remove the token on logout
+  removeAuthToken();
+
+  return { ok: res.ok, data };
 }
 
 export async function checkAuthStatus() {
-  const res = await request('/auth/status');
-  return { ok: res.ok, data: await res.json() };
+  const token = getAuthToken();
+  if (!token) {
+    return { ok: true, data: { logged_in: false } };
+  }
+
+  try {
+    const res = await request('/auth/status');
+    const data = await res.json();
+
+    // If token is invalid, clean it up
+    if (!data.logged_in) {
+      removeAuthToken();
+    }
+
+    return { ok: res.ok, data };
+  } catch {
+    removeAuthToken();
+    return { ok: true, data: { logged_in: false } };
+  }
 }
 
 // ----------------------------------------
@@ -95,7 +148,7 @@ export async function getDataset() {
 }
 
 // ----------------------------------------
-// AI Prediction & Training
+// AI Prediction
 // ----------------------------------------
 export async function predictSales(month) {
   const res = await request('/predict', {
@@ -107,16 +160,6 @@ export async function predictSales(month) {
 
 export async function getModelInfo() {
   const res = await request('/model/info');
-  return { ok: res.ok, data: await res.json() };
-}
-
-export async function getTrainStatus() {
-  const res = await request('/train/status');
-  return { ok: res.ok, data: await res.json() };
-}
-
-export async function trainModel() {
-  const res = await request('/train', { method: 'POST' });
   return { ok: res.ok, data: await res.json() };
 }
 
@@ -135,7 +178,40 @@ export async function uploadCSV(file) {
 }
 
 // ----------------------------------------
-// Export URLs (direct downloads)
+// Exports (authenticated downloads)
 // ----------------------------------------
-export const EXPORT_EXCEL_URL = `${API_BASE}/export/excel`;
-export const EXPORT_PDF_URL = `${API_BASE}/export/pdf`;
+export async function downloadExcel() {
+  const res = await request('/export/excel');
+  if (!res.ok) {
+    const data = await res.json();
+    return { ok: false, data };
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Sales_Report.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return { ok: true };
+}
+
+export async function downloadPDF() {
+  const res = await request('/export/pdf');
+  if (!res.ok) {
+    const data = await res.json();
+    return { ok: false, data };
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Sales_Report.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return { ok: true };
+}

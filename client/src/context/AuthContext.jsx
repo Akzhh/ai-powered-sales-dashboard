@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if a valid token exists in localStorage
     apiCheckAuth()
       .then(({ data }) => {
         setIsLoggedIn(data.logged_in || false);
@@ -18,7 +19,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (username, password) => {
     const result = await apiLogin(username, password);
-    if (result.ok) {
+    if (result.ok && result.data.token) {
       setIsLoggedIn(true);
     }
     return result;

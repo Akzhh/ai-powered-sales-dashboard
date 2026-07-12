@@ -6,5 +6,6 @@ joblib
 openpyxl
 reportlab
 psycopg2-binary
-gunicorn
 numpy
+PyJWT
+werkzeug

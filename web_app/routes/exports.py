@@ -1,30 +1,21 @@
 import os
-from flask import Blueprint, jsonify, session, send_file
+import tempfile
+from flask import Blueprint, jsonify, send_file
 from openpyxl import Workbook
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from datetime import datetime
-from pathlib import Path
 import services.database as database
 from services.forecast import predict_sales
+from services.auth_service import require_auth
 
 exports_bp = Blueprint('exports', __name__)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-TMP_DIR = BASE_DIR / "tmp"
-TMP_DIR.mkdir(exist_ok=True)
-
-
-def check_auth():
-    return session.get('logged_in', False)
-
 
 @exports_bp.route('/api/export/excel', methods=['GET'])
+@require_auth
 def export_excel():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         rows = database.view_sales()
         wb = Workbook()
@@ -37,7 +28,8 @@ def export_excel():
         for r in rows:
             ws.append(r)
 
-        temp_filename = str(TMP_DIR / "sales_report.xlsx")
+        # Use system temp directory (works on Vercel Serverless)
+        temp_filename = os.path.join(tempfile.gettempdir(), "sales_report.xlsx")
         wb.save(temp_filename)
 
         response = send_file(
@@ -58,10 +50,8 @@ def export_excel():
 
 
 @exports_bp.route('/api/export/pdf', methods=['GET'])
+@require_auth
 def export_pdf():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         rows = database.view_sales()
         total_sales = sum(float(r[6]) for r in rows)
@@ -72,7 +62,8 @@ def export_pdf():
         except Exception:
             sample_prediction = 51424.24
 
-        temp_filename = str(TMP_DIR / "sales_report.pdf")
+        # Use system temp directory (works on Vercel Serverless)
+        temp_filename = os.path.join(tempfile.gettempdir(), "sales_report.pdf")
 
         doc = SimpleDocTemplate(temp_filename, pagesize=letter)
         styles = getSampleStyleSheet()

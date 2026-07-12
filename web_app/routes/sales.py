@@ -1,18 +1,13 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 import services.database as database
+from services.auth_service import require_auth
 
 sales_bp = Blueprint('sales', __name__)
 
 
-def check_auth():
-    return session.get('logged_in', False)
-
-
 @sales_bp.route('/api/sales', methods=['GET'])
+@require_auth
 def get_sales():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         rows = database.view_sales()
         sales_list = []
@@ -33,10 +28,8 @@ def get_sales():
 
 
 @sales_bp.route('/api/sales', methods=['POST'])
+@require_auth
 def add_sale():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json() or {}
     date = data.get('date')
     product = data.get('product')
@@ -65,10 +58,8 @@ def add_sale():
 
 
 @sales_bp.route('/api/sales/<int:sale_id>', methods=['PUT'])
+@require_auth
 def update_sale(sale_id):
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json() or {}
     date = data.get('date')
     product = data.get('product')
@@ -97,10 +88,8 @@ def update_sale(sale_id):
 
 
 @sales_bp.route('/api/sales/<int:sale_id>', methods=['DELETE'])
+@require_auth
 def delete_sale(sale_id):
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         database.delete_sale(sale_id)
         return jsonify({'success': True, 'message': 'Sale deleted successfully'})
@@ -109,10 +98,8 @@ def delete_sale(sale_id):
 
 
 @sales_bp.route('/api/sales/search', methods=['GET'])
+@require_auth
 def search_sales():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     product = request.args.get('product', '').strip()
     if not product:
         return jsonify([])
@@ -137,10 +124,8 @@ def search_sales():
 
 
 @sales_bp.route('/api/stats', methods=['GET'])
+@require_auth
 def get_stats():
-    if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         rows = database.view_sales()
         total_sales = sum(float(r[6]) for r in rows)

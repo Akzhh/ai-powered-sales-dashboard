@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { predictSales, getTrainStatus } from '../api';
+import { useState } from 'react';
+import { predictSales } from '../api';
 import { useToast } from '../components/Toast';
 
 export default function PredictionPage() {
@@ -8,47 +8,6 @@ export default function PredictionPage() {
   const [prediction, setPrediction] = useState(null);
   const [predMonth, setPredMonth] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [trainingState, setTrainingState] = useState({ status: 'completed', progress: 0 });
-
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  const fetchStatus = async () => {
-    try {
-      const res = await getTrainStatus();
-      if (res.ok) setTrainingState(res.data);
-    } catch {
-      // Silent error
-    }
-  };
-
-  useEffect(() => {
-    let interval = null;
-    if (trainingState.status === 'training') {
-      interval = setInterval(async () => {
-        try {
-          const res = await getTrainStatus();
-          if (res.ok) {
-            setTrainingState(res.data);
-            if (res.data.status !== 'training') {
-              clearInterval(interval);
-              if (res.data.status === 'completed') {
-                showToast('AI Model training completed! Prediction services are fully available.', 'success');
-              } else {
-                showToast('AI Model training failed.', 'error');
-              }
-            }
-          }
-        } catch {
-          // Silent catch
-        }
-      }, 2000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [trainingState.status]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,8 +41,6 @@ export default function PredictionPage() {
   const formatCurrency = (val) =>
     `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const isTraining = trainingState.status === 'training';
-
   return (
     <div className="content-section">
       <div className="prediction-grid">
@@ -102,42 +59,20 @@ export default function PredictionPage() {
                 placeholder="e.g. 13"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                disabled={isTraining}
                 required
               />
               <span className="input-hint">
                 Month 1–12 are historical, 13+ are future projections.
               </span>
             </div>
-            
-            {isTraining && (
-              <div style={{
-                marginTop: '12px',
-                marginBottom: '16px',
-                padding: '12px 16px',
-                background: 'rgba(139, 92, 246, 0.08)',
-                border: '1px solid rgba(139, 92, 246, 0.15)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                color: 'var(--accent-purple)',
-                fontWeight: '500'
-              }}>
-                <i className="fa-solid fa-spinner fa-spin" />
-                <span>AI model is currently training ({trainingState.progress}%). Predictions are temporarily disabled.</span>
-              </div>
-            )}
 
             <button
               type="submit"
               className="btn-success btn-block"
-              disabled={loading || isTraining}
-              style={{ cursor: isTraining ? 'not-allowed' : 'pointer' }}
+              disabled={loading}
             >
               <i className="fa-solid fa-bolt" />
-              {loading ? 'Calculating...' : isTraining ? 'Model Training...' : 'Generate Forecast'}
+              {loading ? 'Calculating...' : 'Generate Forecast'}
             </button>
           </form>
         </div>
@@ -148,7 +83,7 @@ export default function PredictionPage() {
             <h3>Sales Forecast Results</h3>
           </div>
           <div className="prediction-display">
-            <div className={`predict-icon-wrapper ${loading || isTraining ? '' : 'animate-pulse'}`}>
+            <div className={`predict-icon-wrapper ${loading ? '' : 'animate-pulse'}`}>
               <i className="fa-solid fa-brain" />
             </div>
             <div className="predict-details">
@@ -156,8 +91,6 @@ export default function PredictionPage() {
               <h2 id="prediction-result-val">
                 {loading
                   ? 'Calculating...'
-                  : isTraining
-                  ? 'Waiting for model...'
                   : prediction !== null
                   ? formatCurrency(prediction)
                   : '₹ 0.00'}

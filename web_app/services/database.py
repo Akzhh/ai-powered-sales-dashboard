@@ -1,155 +1,157 @@
 import os
-import sqlite3
-from pathlib import Path
+import logging
+import psycopg2
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
-# Database path relative to this file
-DB_PATH = Path(__file__).resolve().parent.parent / "sales.db"
+logger = logging.getLogger(__name__)
+
+
+def _get_database_url():
+    """Get DATABASE_URL from environment, converting postgres:// to postgresql:// if needed."""
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError(
+            "DATABASE_URL environment variable is not set. "
+            "Please configure it with your Supabase PostgreSQL connection string."
+        )
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return db_url
 
 
 def connect_db():
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        import psycopg2
-        if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql://", 1)
-        return psycopg2.connect(db_url)
-    else:
-        return sqlite3.connect(DB_PATH, timeout=20)
+    """Create and return a new PostgreSQL connection."""
+    return psycopg2.connect(_get_database_url())
 
 
-def is_postgres(conn):
-    return conn.__class__.__module__.startswith('psycopg2')
-
-
+# ----------------------------------------
+# Database Initialization
+# ----------------------------------------
 def init_db():
+    """Create all required tables if they do not exist and seed default admin user."""
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        is_pg = is_postgres(conn)
 
-        # 1. Sales table (backward compatibility)
-        if is_pg:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sales(
-                    id SERIAL PRIMARY KEY,
-                    date TEXT NOT NULL,
-                    product TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    price DOUBLE PRECISION NOT NULL,
-                    total DOUBLE PRECISION NOT NULL,
-                    profit DOUBLE PRECISION NOT NULL
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sales(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date TEXT NOT NULL,
-                    product TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    price REAL NOT NULL,
-                    total REAL NOT NULL,
-                    profit REAL NOT NULL
-                )
-            """)
+        # 1. Users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL
+            )
+        """)
 
-        # 2. Users table (for authentication)
-        if is_pg:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users(
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(100) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL
-                )
-            """)
+        # 2. Sales table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales(
+                id SERIAL PRIMARY KEY,
+                date TEXT NOT NULL,
+                product TEXT NOT NULL,
+                category TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                price DOUBLE PRECISION NOT NULL,
+                total DOUBLE PRECISION NOT NULL,
+                profit DOUBLE PRECISION NOT NULL
+            )
+        """)
 
-        # 3. Uploaded Datasets table
-        if is_pg:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS uploaded_datasets(
-                    id SERIAL PRIMARY KEY,
-                    filename VARCHAR(255) NOT NULL,
-                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    record_count INTEGER NOT NULL
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS uploaded_datasets(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filename TEXT NOT NULL,
-                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    record_count INTEGER NOT NULL
-                )
-            """)
+        # 3. Dataset rows table (Month/Sales from CSV uploads)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dataset_rows(
+                id SERIAL PRIMARY KEY,
+                month INTEGER NOT NULL,
+                sales DOUBLE PRECISION NOT NULL,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-        # 4. Prediction History table
-        if is_pg:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS prediction_history(
-                    id SERIAL PRIMARY KEY,
-                    month INTEGER NOT NULL,
-                    predicted_sales DOUBLE PRECISION NOT NULL,
-                    predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS prediction_history(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    month INTEGER NOT NULL,
-                    predicted_sales REAL NOT NULL,
-                    predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+        # 4. Uploaded datasets metadata
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS uploaded_datasets(
+                id SERIAL PRIMARY KEY,
+                filename VARCHAR(255) NOT NULL,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                record_count INTEGER NOT NULL
+            )
+        """)
 
-        # 5. Model Metadata table
-        if is_pg:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS model_metadata(
-                    id SERIAL PRIMARY KEY,
-                    accuracy DOUBLE PRECISION NOT NULL,
-                    algorithm VARCHAR(100) NOT NULL,
-                    training_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    dataset_size INTEGER NOT NULL
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS model_metadata(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    accuracy REAL NOT NULL,
-                    algorithm TEXT NOT NULL,
-                    training_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    dataset_size INTEGER NOT NULL
-                )
-            """)
+        # 5. Prediction history
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS prediction_history(
+                id SERIAL PRIMARY KEY,
+                month INTEGER NOT NULL,
+                predicted_sales DOUBLE PRECISION NOT NULL,
+                predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-        # Seed default admin user
-        query_check = "SELECT * FROM users WHERE username = ?"
-        if is_pg:
-            query_check = query_check.replace('?', '%s')
-        cursor.execute(query_check, ('admin',))
+        # 6. Model metadata
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS model_metadata(
+                id SERIAL PRIMARY KEY,
+                accuracy DOUBLE PRECISION NOT NULL,
+                algorithm VARCHAR(100) NOT NULL,
+                training_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                dataset_size INTEGER NOT NULL
+            )
+        """)
+
+        # Seed default admin user (hashed password)
+        cursor.execute("SELECT id FROM users WHERE username = %s", ('admin',))
         if not cursor.fetchone():
-            query_insert = "INSERT INTO users (username, password) VALUES (?, ?)"
-            if is_pg:
-                query_insert = query_insert.replace('?', '%s')
-            cursor.execute(query_insert, ('admin', 'admin123'))
+            hashed_pw = generate_password_hash('admin123')
+            cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
+                ('admin', hashed_pw)
+            )
+            logger.info("Seeded default admin user.")
 
         conn.commit()
+        logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Database initialization error: {e}")
+        raise
     finally:
         conn.close()
+
+
+# ----------------------------------------
+# User Authentication
+# ----------------------------------------
+def get_user_by_username(username):
+    """Return user dict with id, username, password (hashed) or None."""
+    conn = connect_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, username, password FROM users WHERE username = %s",
+            (username,)
+        )
+        row = cursor.fetchone()
+        if row:
+            return {"id": row[0], "username": row[1], "password": row[2]}
+        return None
+    finally:
+        conn.close()
+
+
+def check_user_credentials(username, password):
+    """Validate username/password. Supports both hashed and legacy plaintext passwords."""
+    user = get_user_by_username(username)
+    if not user:
+        return False
+
+    stored_pw = user["password"]
+
+    # Support hashed passwords (werkzeug format)
+    if stored_pw.startswith(("pbkdf2:", "scrypt:")):
+        return check_password_hash(stored_pw, password)
+
+    # Fallback: legacy plaintext comparison
+    return stored_pw == password
 
 
 # ----------------------------------------
@@ -159,14 +161,13 @@ def insert_sale(date, product, category, quantity, price, total, profit):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = """
-            INSERT INTO sales
+        cursor.execute(
+            """
+            INSERT INTO sales (date, product, category, quantity, price, total, profit)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
             (date, product, category, quantity, price, total, profit)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (date, product, category, quantity, price, total, profit))
+        )
         conn.commit()
     finally:
         conn.close()
@@ -176,9 +177,8 @@ def view_sales():
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM sales")
-        rows = cursor.fetchall()
-        return rows
+        cursor.execute("SELECT * FROM sales ORDER BY id ASC")
+        return cursor.fetchall()
     finally:
         conn.close()
 
@@ -187,12 +187,11 @@ def search_sale(product):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = "SELECT * FROM sales WHERE product LIKE ?"
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, ('%' + product + '%',))
-        rows = cursor.fetchall()
-        return rows
+        cursor.execute(
+            "SELECT * FROM sales WHERE product ILIKE %s",
+            ('%' + product + '%',)
+        )
+        return cursor.fetchall()
     finally:
         conn.close()
 
@@ -201,21 +200,15 @@ def update_sale(id, date, product, category, quantity, price, total, profit):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = """
+        cursor.execute(
+            """
             UPDATE sales
-            SET
-                date=?,
-                product=?,
-                category=?,
-                quantity=?,
-                price=?,
-                total=?,
-                profit=?
-            WHERE id=?
-        """
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (date, product, category, quantity, price, total, profit, id))
+            SET date=%s, product=%s, category=%s, quantity=%s,
+                price=%s, total=%s, profit=%s
+            WHERE id=%s
+            """,
+            (date, product, category, quantity, price, total, profit, id)
+        )
         conn.commit()
     finally:
         conn.close()
@@ -225,30 +218,48 @@ def delete_sale(id):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = "DELETE FROM sales WHERE id=?"
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (id,))
+        cursor.execute("DELETE FROM sales WHERE id=%s", (id,))
         conn.commit()
     finally:
         conn.close()
 
 
 # ----------------------------------------
-# User Authentication
+# Dataset Rows (CSV upload storage)
 # ----------------------------------------
-def check_user_credentials(username, password):
+def save_dataset_rows(rows):
+    """
+    Replace all existing dataset rows with new ones.
+    rows: list of dicts with 'month' and 'sales' keys.
+    """
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = "SELECT password FROM users WHERE username = ?"
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (username,))
-        row = cursor.fetchone()
-        if row and row[0] == password:
-            return True
-        return False
+        # Clear existing rows before inserting new dataset
+        cursor.execute("DELETE FROM dataset_rows")
+        for row in rows:
+            cursor.execute(
+                "INSERT INTO dataset_rows (month, sales) VALUES (%s, %s)",
+                (int(row['month']), float(row['sales']))
+            )
+        conn.commit()
+        logger.info(f"Saved {len(rows)} dataset rows to database.")
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error saving dataset rows: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def get_dataset_rows():
+    """Fetch all dataset rows, ordered by month."""
+    conn = connect_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT month, sales FROM dataset_rows ORDER BY month ASC")
+        rows = cursor.fetchall()
+        return [{"Month": r[0], "Sales": r[1]} for r in rows]
     finally:
         conn.close()
 
@@ -260,10 +271,10 @@ def log_uploaded_dataset(filename, record_count):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = "INSERT INTO uploaded_datasets (filename, record_count) VALUES (?, ?)"
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (filename, record_count))
+        cursor.execute(
+            "INSERT INTO uploaded_datasets (filename, record_count) VALUES (%s, %s)",
+            (filename, record_count)
+        )
         conn.commit()
     finally:
         conn.close()
@@ -273,10 +284,10 @@ def log_prediction(month, predicted_sales):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = "INSERT INTO prediction_history (month, predicted_sales) VALUES (?, ?)"
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (month, predicted_sales))
+        cursor.execute(
+            "INSERT INTO prediction_history (month, predicted_sales) VALUES (%s, %s)",
+            (month, predicted_sales)
+        )
         conn.commit()
     finally:
         conn.close()
@@ -286,13 +297,13 @@ def save_model_metadata(accuracy, algorithm, dataset_size):
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        query = """
+        cursor.execute(
+            """
             INSERT INTO model_metadata (accuracy, algorithm, training_date, dataset_size)
-            VALUES (?, ?, ?, ?)
-        """
-        if is_postgres(conn):
-            query = query.replace('?', '%s')
-        cursor.execute(query, (accuracy, algorithm, datetime.now(), dataset_size))
+            VALUES (%s, %s, %s, %s)
+            """,
+            (accuracy, algorithm, datetime.now(), dataset_size)
+        )
         conn.commit()
     finally:
         conn.close()
@@ -302,7 +313,10 @@ def get_latest_model_metadata():
     conn = connect_db()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT accuracy, algorithm, training_date, dataset_size FROM model_metadata ORDER BY id DESC LIMIT 1")
+        cursor.execute(
+            "SELECT accuracy, algorithm, training_date, dataset_size "
+            "FROM model_metadata ORDER BY id DESC LIMIT 1"
+        )
         row = cursor.fetchone()
         if row:
             t_date = row[2]
@@ -324,10 +338,3 @@ def get_latest_model_metadata():
         return None
     finally:
         conn.close()
-
-
-# Auto-create tables on startup/import
-try:
-    init_db()
-except Exception as e:
-    print(f"Database initialization warning: {e}")
