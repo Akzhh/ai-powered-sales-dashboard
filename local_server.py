@@ -12,8 +12,8 @@ class LocalDevDispatcher:
         from api.sales import app as sales_app
         from api.dashboard import app as dashboard_app
         from api.upload import app as upload_app
-        from api.predict import app as predict_app
-        from api.history import app as history_app
+        from api.predict.index import app as predict_app
+        from api.history.index import app as history_app
         from api.health import app as health_app
         
         self.apps = [

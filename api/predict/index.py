@@ -5,8 +5,8 @@ import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# Add the root api directory to the sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the parent api directory to the sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.config import SECRET_KEY, CORS_ORIGINS
 from services.database import get_latest_model_metadata

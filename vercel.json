@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/*.py": {
+    "api/**/*.py": {
       "excludeFiles": [
         "node_modules/**",
         "dist/**",
@@ -19,11 +19,11 @@
   "rewrites": [
     {
       "source": "/api/predict",
-      "destination": "/api/predict.py"
+      "destination": "/api/predict/index.py"
     },
     {
       "source": "/api/model/info",
-      "destination": "/api/predict.py"
+      "destination": "/api/predict/index.py"
     },
     {
       "source": "/api/stats",
@@ -51,15 +51,15 @@
     },
     {
       "source": "/api/dataset",
-      "destination": "/api/history.py"
+      "destination": "/api/history/index.py"
     },
     {
       "source": "/api/export/excel",
-      "destination": "/api/history.py"
+      "destination": "/api/history/index.py"
     },
     {
       "source": "/api/export/pdf",
-      "destination": "/api/history.py"
+      "destination": "/api/history/index.py"
     },
     {
       "source": "/api/login",
