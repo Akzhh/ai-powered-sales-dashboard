@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**}"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
