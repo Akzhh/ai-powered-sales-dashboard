@@ -1,8 +1,15 @@
 import os
+import sys
 import re
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+
+# Add the current directory to sys.path so we can import local modules
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 from services.database import init_db
 from services.model_loader import ModelLoader
 
@@ -47,12 +54,11 @@ app.register_blueprint(exports_bp)
 
 
 # Health check endpoint
-@app.route('/')
-def index():
+@app.route('/api/health')
+def health():
     return jsonify({
         'status': 'ok',
-        'service': 'AI Sales Forecasting Dashboard API',
-        'version': '2.0.0'
+        'message': 'Backend running successfully'
     })
 
 
@@ -64,16 +70,28 @@ def not_found(e):
 
 # Startup warmup
 def warmup():
-    logger.info("Initializing database...")
-    init_db()
-    logger.info("Caching machine learning model...")
-    ModelLoader.load_model()
+    try:
+        logger.info("Initializing database...")
+        init_db()
+    except Exception as e:
+        logger.error(f"Database initialization failed (maybe DATABASE_URL is not set): {e}")
+
+    try:
+        logger.info("Caching machine learning model...")
+        ModelLoader.load_model()
+    except Exception as e:
+        logger.error(f"Model caching failed: {e}")
     logger.info("Warmup complete. API is ready.")
 
+# Perform warmup lazily to avoid crashing during Vercel build
+warmup_done = False
 
-# Perform warmup under app context on startup
-with app.app_context():
-    warmup()
+@app.before_request
+def do_warmup():
+    global warmup_done
+    if not warmup_done:
+        warmup_done = True
+        warmup()
 
 
 if __name__ == '__main__':
