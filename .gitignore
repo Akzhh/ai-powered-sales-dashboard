@@ -28,7 +28,8 @@ env/
 
 # Node
 node_modules/
-client/dist/
+frontend/dist/
+temp_deps/
 
 # OS files
 .DS_Store
