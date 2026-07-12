@@ -1,21 +1,16 @@
-import os
 import jwt
 import logging
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from flask import request, jsonify
+from services.config import JWT_SECRET
 
 logger = logging.getLogger(__name__)
 
 
 def _get_jwt_secret():
-    """Get JWT_SECRET from environment variables."""
-    secret = os.environ.get("JWT_SECRET")
-    if not secret:
-        # Fallback to SECRET_KEY if JWT_SECRET is not set
-        secret = os.environ.get("SECRET_KEY", "ai-sales-dashboard-jwt-secret-change-me")
-        logger.warning("JWT_SECRET not set, using SECRET_KEY as fallback.")
-    return secret
+    """Get JWT_SECRET from config variables."""
+    return JWT_SECRET
 
 
 def generate_token(username):

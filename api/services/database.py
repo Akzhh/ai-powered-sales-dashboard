@@ -1,15 +1,15 @@
-import os
 import logging
 import psycopg2
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+from services.config import DATABASE_URL
+from services.utils import hash_password, verify_hashed_password
 
 logger = logging.getLogger(__name__)
 
 
 def _get_database_url():
-    """Get DATABASE_URL from environment, converting postgres:// to postgresql:// if needed."""
-    db_url = os.environ.get("DATABASE_URL")
+    """Get DATABASE_URL from config, converting postgres:// to postgresql:// if needed."""
+    db_url = DATABASE_URL
     if not db_url:
         raise RuntimeError(
             "DATABASE_URL environment variable is not set. "
@@ -101,7 +101,7 @@ def init_db():
         # Seed default admin user (hashed password)
         cursor.execute("SELECT id FROM users WHERE username = %s", ('admin',))
         if not cursor.fetchone():
-            hashed_pw = generate_password_hash('admin123')
+            hashed_pw = hash_password('admin123')
             cursor.execute(
                 "INSERT INTO users (username, password) VALUES (%s, %s)",
                 ('admin', hashed_pw)
@@ -148,7 +148,7 @@ def check_user_credentials(username, password):
 
     # Support hashed passwords (werkzeug format)
     if stored_pw.startswith(("pbkdf2:", "scrypt:")):
-        return check_password_hash(stored_pw, password)
+        return verify_hashed_password(stored_pw, password)
 
     # Fallback: legacy plaintext comparison
     return stored_pw == password

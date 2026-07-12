@@ -1,9 +1,6 @@
-from pathlib import Path
 import threading
 import logging
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-MODEL_PATH = BASE_DIR / "models" / "sales_model.pkl"
+from services.config import MODEL_PATH
 
 logger = logging.getLogger(__name__)
 

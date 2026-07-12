@@ -10,6 +10,7 @@ from datetime import datetime
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from services.config import SECRET_KEY, CORS_ORIGINS
 import services.database as database
 from services.auth_service import require_auth
 
@@ -22,17 +23,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')
+app.secret_key = SECRET_KEY
 
 # Enable CORS
-cors_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    re.compile(r"^https://.*\.vercel\.app$")
-]
-if os.environ.get("ALLOWED_ORIGINS"):
-    cors_origins.extend(os.environ.get("ALLOWED_ORIGINS").split(","))
-CORS(app, supports_credentials=True, origins=cors_origins)
+CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
 @app.route('/api/dataset', methods=['GET'])
 @app.route('/dataset', methods=['GET'])

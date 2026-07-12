@@ -8,6 +8,8 @@ from flask_cors import CORS
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from services.config import SECRET_KEY, CORS_ORIGINS
+from services.validation import validate_sale_input
 import services.database as database
 from services.auth_service import require_auth
 
@@ -20,17 +22,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')
+app.secret_key = SECRET_KEY
 
 # Enable CORS
-cors_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    re.compile(r"^https://.*\.vercel\.app$")
-]
-if os.environ.get("ALLOWED_ORIGINS"):
-    cors_origins.extend(os.environ.get("ALLOWED_ORIGINS").split(","))
-CORS(app, supports_credentials=True, origins=cors_origins)
+CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
 @app.route('/api/sales', methods=['GET'])
 @app.route('/sales', methods=['GET'])
@@ -65,22 +60,17 @@ def add_sale():
     quantity = data.get('quantity')
     price = data.get('price')
 
-    if not all([date, product, category, quantity, price]):
-        return jsonify({'error': 'All fields are required'}), 400
+    valid, result = validate_sale_input(date, product, category, quantity, price)
+    if not valid:
+        return jsonify({'error': result}), 400
 
     try:
-        qty = int(quantity)
-        prc = float(price)
-        if qty <= 0 or prc <= 0:
-            return jsonify({'error': 'Quantity and Price must be positive numbers'}), 400
-
+        qty, prc = result
         total = qty * prc
         profit = total * 0.20
 
         database.insert_sale(date, product, category, qty, prc, total, profit)
         return jsonify({'success': True, 'message': 'Sale added successfully'})
-    except ValueError:
-        return jsonify({'error': 'Quantity and Price must be numeric'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -95,22 +85,17 @@ def update_sale(sale_id):
     quantity = data.get('quantity')
     price = data.get('price')
 
-    if not all([date, product, category, quantity, price]):
-        return jsonify({'error': 'All fields are required'}), 400
+    valid, result = validate_sale_input(date, product, category, quantity, price)
+    if not valid:
+        return jsonify({'error': result}), 400
 
     try:
-        qty = int(quantity)
-        prc = float(price)
-        if qty <= 0 or prc <= 0:
-            return jsonify({'error': 'Quantity and Price must be positive numbers'}), 400
-
+        qty, prc = result
         total = qty * prc
         profit = total * 0.20
 
         database.update_sale(sale_id, date, product, category, qty, prc, total, profit)
         return jsonify({'success': True, 'message': 'Sale updated successfully'})
-    except ValueError:
-        return jsonify({'error': 'Quantity and Price must be numeric'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
