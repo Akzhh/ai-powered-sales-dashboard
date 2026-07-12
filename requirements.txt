@@ -5,3 +5,6 @@ reportlab
 psycopg2-binary
 PyJWT
 werkzeug
+pandas
+scikit-learn
+joblib

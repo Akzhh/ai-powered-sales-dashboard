@@ -10,3 +10,8 @@ __pycache__/
 *.pyc
 web_app/
 ai dashboard/
+dataset/
+*.ipynb
+.ipynb_checkpoints/
+train_model.py
+*.csv

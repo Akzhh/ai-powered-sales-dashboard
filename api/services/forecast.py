@@ -1,4 +1,3 @@
-import pandas as pd
 import logging
 from services.model_loader import ModelLoader
 from services.database import log_prediction
@@ -12,6 +11,7 @@ def predict_sales(month: int) -> float:
     if model is None:
         raise ValueError("Machine learning model is not loaded or not trained yet.")
     
+    import pandas as pd
     data = pd.DataFrame([[month]], columns=["Month"])
     prediction = model.predict(data)
     predicted_val = round(float(prediction[0]), 2)

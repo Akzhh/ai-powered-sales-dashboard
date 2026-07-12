@@ -1,24 +1,72 @@
 {
   "functions": {
-    "api/index.py": {
-      "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**,models/**,temp_deps/**,api/predict/**,train_model.py}"
-    },
-    "api/predict/index.py": {
+    "api/*.py": {
       "excludeFiles": "{frontend/**,web_app/**,ai dashboard/**,dataset/**,temp_deps/**,train_model.py}"
     }
   },
   "rewrites": [
     {
       "source": "/api/predict",
-      "destination": "/api/predict/index.py"
+      "destination": "/api/predict.py"
     },
     {
       "source": "/api/model/info",
-      "destination": "/api/predict/index.py"
+      "destination": "/api/predict.py"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
+      "source": "/api/stats",
+      "destination": "/api/dashboard.py"
+    },
+    {
+      "source": "/api/sales/search",
+      "destination": "/api/sales.py"
+    },
+    {
+      "source": "/api/sales",
+      "destination": "/api/sales.py"
+    },
+    {
+      "source": "/api/sales/(.*)",
+      "destination": "/api/sales.py"
+    },
+    {
+      "source": "/api/upload",
+      "destination": "/api/upload.py"
+    },
+    {
+      "source": "/api/upload-csv",
+      "destination": "/api/upload.py"
+    },
+    {
+      "source": "/api/dataset",
+      "destination": "/api/history.py"
+    },
+    {
+      "source": "/api/export/excel",
+      "destination": "/api/history.py"
+    },
+    {
+      "source": "/api/export/pdf",
+      "destination": "/api/history.py"
+    },
+    {
+      "source": "/api/login",
+      "destination": "/api/auth.py"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/auth.py"
+    },
+    {
+      "source": "/api/auth/status",
+      "destination": "/api/auth.py"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/health.py"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "source": "/(.*)",

@@ -1,16 +1,43 @@
+import os
+import sys
+import re
 import io
 import csv
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+
+# Add the root api directory to the sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from services.database import log_uploaded_dataset, save_dataset_rows
 from services.auth_service import require_auth
 
-upload_bp = Blueprint('upload', __name__)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 logger = logging.getLogger(__name__)
 
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')
 
-@upload_bp.route('/api/upload', methods=['POST'])
-@upload_bp.route('/api/upload-csv', methods=['POST'])  # Backward compatibility
+# Enable CORS
+cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    re.compile(r"^https://.*\.vercel\.app$")
+]
+if os.environ.get("ALLOWED_ORIGINS"):
+    cors_origins.extend(os.environ.get("ALLOWED_ORIGINS").split(","))
+CORS(app, supports_credentials=True, origins=cors_origins)
+
+@app.route('/api/upload', methods=['POST'])
+@app.route('/api/upload-csv', methods=['POST'])  # Backward compatibility
+@app.route('/upload', methods=['POST'])
+@app.route('/upload-csv', methods=['POST'])  # Backward compatibility
 @require_auth
 def upload_dataset():
     if 'file' not in request.files:
@@ -64,3 +91,6 @@ def upload_dataset():
     except Exception as e:
         logger.error(f"CSV upload error: {e}")
         return jsonify({'error': f'Failed to process CSV: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

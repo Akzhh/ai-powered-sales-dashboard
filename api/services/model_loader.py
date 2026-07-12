@@ -1,4 +1,3 @@
-import joblib
 from pathlib import Path
 import threading
 import logging
@@ -20,6 +19,7 @@ class ModelLoader:
             with cls._lock:
                 if MODEL_PATH.exists():
                     try:
+                        import joblib
                         cls._model = joblib.load(MODEL_PATH)
                         logger.info("Successfully loaded ML model from disk.")
                     except Exception as e:
