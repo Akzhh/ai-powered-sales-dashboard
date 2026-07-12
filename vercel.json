@@ -1,7 +1,19 @@
 {
   "functions": {
     "api/*.py": {
-      "excludeFiles": "node_modules/**"
+      "excludeFiles": [
+        "node_modules/**",
+        "dist/**",
+        "temp_deps/**",
+        ".venv/**",
+        "venv/**",
+        "env/**",
+        "web_app/**",
+        "ai dashboard/**",
+        "dataset/**",
+        "src/**",
+        "public/**"
+      ]
     }
   },
   "rewrites": [
