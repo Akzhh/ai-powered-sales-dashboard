@@ -15,7 +15,7 @@ def connect_db():
             db_url = db_url.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(db_url)
     else:
-        return sqlite3.connect(DB_PATH)
+        return sqlite3.connect(DB_PATH, timeout=20)
 
 
 def is_postgres(conn):

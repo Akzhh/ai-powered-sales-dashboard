@@ -146,3 +146,49 @@ The model will automatically retrain in a background thread when a new CSV is up
 - The SQLite database (`sales.db`) is auto-created on first run.
 - The ML model (`sales_model.pkl`) is auto-trained in the background if not found on startup.
 - The monolithic Flask app serves the static frontend from `static/` automatically on port 5000.
+
+## Production Deployment (Vercel + PythonAnywhere + SQLite)
+
+This architecture splits the web app into a hosted React static frontend (Vercel) and a persistent Flask backend (PythonAnywhere) using a persistent SQLite database.
+
+### 1. Backend Setup on PythonAnywhere
+1. Create a free account at [PythonAnywhere](https://www.pythonanywhere.com/).
+2. Open a **Bash Console** on PythonAnywhere and clone your GitHub repository:
+   ```bash
+   git clone https://github.com/Akzhh/ai-powered-sales-dashboard.git
+   ```
+3. Go to the **Web** tab, click **Add a new web app**, and configure it:
+   - Select **Manual Configuration** (instead of Flask template) and choose **Python 3.10+**.
+4. Set the paths in the Web tab configuration:
+   - **Source Code**: `/home/yourusername/ai-powered-sales-dashboard/web_app`
+   - **Working Directory**: `/home/yourusername/ai-powered-sales-dashboard/web_app`
+5. Open your WSGI configuration file (link under Code section in the Web tab) and replace its contents with:
+   ```python
+   import sys
+   import os
+
+   # Add your project path to the sys.path
+   project_home = '/home/yourusername/ai-powered-sales-dashboard/web_app'
+   if project_home not in sys.path:
+       sys.path.insert(0, project_home)
+
+   # Import the Flask app object
+   from app import app as application
+   ```
+6. Open a PythonAnywhere console, create a virtualenv, and install the dependencies:
+   ```bash
+   mkvirtualenv --python=python3.10 dashboard-env
+   pip install -r /home/yourusername/ai-powered-sales-dashboard/web_app/requirements.txt
+   ```
+7. Set the virtualenv path in the Web tab to `/home/yourusername/.virtualenvs/dashboard-env`.
+8. Click **Reload** to boot up the backend. It will run on `https://yourusername.pythonanywhere.com`.
+
+### 2. Frontend Setup on Vercel
+1. Go to [Vercel](https://vercel.com/) and import your `ai-powered-sales-dashboard` repository.
+2. Configure the deployment:
+   - Set **Root Directory** to `client`.
+   - Add the **Environment Variable**:
+     - Name: `VITE_API_BASE_URL`
+     - Value: `https://yourusername.pythonanywhere.com` *(replacing yourusername with your actual PythonAnywhere username, without a trailing slash)*.
+3. Click **Deploy**.
+4. Vercel will build the frontend, and CORS will automatically authorize it on PythonAnywhere!
