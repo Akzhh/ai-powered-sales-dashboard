@@ -24,10 +24,12 @@ export default function LoginPage() {
       if (result.ok) {
         showToast('Welcome back, admin!', 'success');
       } else {
-        setError(result.data?.error || 'Login failed');
+        // Now accurately captures the JSON 500 error message returned by our robust backend try/catch
+        setError(result.data?.error || 'Login failed due to an unknown server error');
       }
-    } catch {
-      setError('Server unreachable. Check terminal.');
+    } catch (err) {
+      console.error("Login fetch error:", err);
+      setError('Server unreachable or database disconnected. Check backend logs.');
     }
   };
 

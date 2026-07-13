@@ -34,16 +34,20 @@ def login():
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
 
-    if check_user_credentials(username, password):
-        token = generate_token(username)
-        return jsonify({
-            'success': True,
-            'message': 'Login successful',
-            'token': token,
-            'username': username
-        })
-    else:
-        return jsonify({'error': 'Invalid username or password'}), 401
+    try:
+        if check_user_credentials(username, password):
+            token = generate_token(username)
+            return jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'token': token,
+                'username': username
+            })
+        else:
+            return jsonify({'error': 'Invalid username or password'}), 401
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({'error': f"Internal Server Error: {str(e)}"}), 500
 
 @auth_bp.route('/api/logout', methods=['POST'])
 @auth_bp.route('/logout', methods=['POST'])

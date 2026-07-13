@@ -11,6 +11,14 @@ def _get_database_url():
     """Get DATABASE_URL from config, converting postgres:// to postgresql:// if needed."""
     db_url = DATABASE_URL
     if not db_url:
+        # Check if the user accidentally named it SUPABASE_URL in Vercel instead of DATABASE_URL
+        import os
+        if os.environ.get("SUPABASE_URL") and not os.environ.get("DATABASE_URL"):
+            raise ValueError(
+                "DATABASE_URL is missing, but SUPABASE_URL was found. "
+                "Please ensure you are providing the PostgreSQL connection string in DATABASE_URL, "
+                "not just the Supabase REST URL."
+            )
         raise RuntimeError(
             "DATABASE_URL environment variable is not set. "
             "Please configure it with your Supabase PostgreSQL connection string."
