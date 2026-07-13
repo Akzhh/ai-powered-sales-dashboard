@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -8,9 +9,9 @@ from flask_cors import CORS
 # Add the parent api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-from services.database import get_latest_model_metadata
-from services.auth_service import require_auth
+from _services.config import SECRET_KEY, CORS_ORIGINS
+from _services.database import get_latest_model_metadata
+from _services.auth_service import require_auth
 
 # Configure logging
 logging.basicConfig(
@@ -20,14 +21,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+predict_bp = Blueprint("predict", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/predict', methods=['POST'])
-@app.route('/predict', methods=['POST'])
+@predict_bp.route('/api/predict', methods=['POST'])
+@predict_bp.route('/predict', methods=['POST'])
 @require_auth
 def predict():
     data = request.get_json() or {}
@@ -42,7 +40,7 @@ def predict():
             return jsonify({'error': 'Month must be greater than 0'}), 400
 
         # Lazy import of forecast/predict_sales to prevent early sklearn/pandas import
-        from services.forecast import predict_sales
+        from _services.forecast import predict_sales
         prediction = predict_sales(m)
         return jsonify({
             'month': m,
@@ -53,8 +51,8 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/model/info', methods=['GET'])
-@app.route('/model/info', methods=['GET'])
+@predict_bp.route('/api/model/info', methods=['GET'])
+@predict_bp.route('/model/info', methods=['GET'])
 @require_auth
 def model_info():
     try:
@@ -71,5 +69,4 @@ def model_info():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+

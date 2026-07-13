@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -8,10 +9,10 @@ from flask_cors import CORS
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-from services.validation import validate_sale_input
-import services.database as database
-from services.auth_service import require_auth
+from _services.config import SECRET_KEY, CORS_ORIGINS
+from _services.validation import validate_sale_input
+import _services.database as database
+from _services.auth_service import require_auth
 
 # Configure logging
 logging.basicConfig(
@@ -21,14 +22,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+sales_bp = Blueprint("sales", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/sales', methods=['GET'])
-@app.route('/sales', methods=['GET'])
+@sales_bp.route('/api/sales', methods=['GET'])
+@sales_bp.route('/sales', methods=['GET'])
 @require_auth
 def get_sales():
     try:
@@ -49,8 +47,8 @@ def get_sales():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/sales', methods=['POST'])
-@app.route('/sales', methods=['POST'])
+@sales_bp.route('/api/sales', methods=['POST'])
+@sales_bp.route('/sales', methods=['POST'])
 @require_auth
 def add_sale():
     data = request.get_json() or {}
@@ -74,8 +72,8 @@ def add_sale():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/sales/<int:sale_id>', methods=['PUT'])
-@app.route('/sales/<int:sale_id>', methods=['PUT'])
+@sales_bp.route('/api/sales/<int:sale_id>', methods=['PUT'])
+@sales_bp.route('/sales/<int:sale_id>', methods=['PUT'])
 @require_auth
 def update_sale(sale_id):
     data = request.get_json() or {}
@@ -99,8 +97,8 @@ def update_sale(sale_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/sales/<int:sale_id>', methods=['DELETE'])
-@app.route('/sales/<int:sale_id>', methods=['DELETE'])
+@sales_bp.route('/api/sales/<int:sale_id>', methods=['DELETE'])
+@sales_bp.route('/sales/<int:sale_id>', methods=['DELETE'])
 @require_auth
 def delete_sale(sale_id):
     try:
@@ -109,8 +107,8 @@ def delete_sale(sale_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/sales/search', methods=['GET'])
-@app.route('/sales/search', methods=['GET'])
+@sales_bp.route('/api/sales/search', methods=['GET'])
+@sales_bp.route('/sales/search', methods=['GET'])
 @require_auth
 def search_sales():
     product = request.args.get('product', '').strip()
@@ -135,5 +133,4 @@ def search_sales():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+

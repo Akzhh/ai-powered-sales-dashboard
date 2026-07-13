@@ -1,0 +1,30 @@
+import os
+import sys
+from flask import Flask
+from flask_cors import CORS
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _services.config import SECRET_KEY, CORS_ORIGINS
+
+from _routes.auth import auth_bp
+from _routes.dashboard import dashboard_bp
+from _routes.health import health_bp
+from _routes.sales import sales_bp
+from _routes.upload import upload_bp
+from _routes.history import history_bp
+from _routes.predict import predict_bp
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY
+CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(dashboard_bp)
+app.register_blueprint(health_bp)
+app.register_blueprint(sales_bp)
+app.register_blueprint(upload_bp)
+app.register_blueprint(history_bp)
+app.register_blueprint(predict_bp)
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

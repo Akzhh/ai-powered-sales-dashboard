@@ -1,8 +1,8 @@
 import logging
 import psycopg2
 from datetime import datetime
-from services.config import DATABASE_URL
-from services.utils import hash_password, verify_hashed_password
+from _services.config import DATABASE_URL
+from _services.utils import hash_password, verify_hashed_password
 
 logger = logging.getLogger(__name__)
 

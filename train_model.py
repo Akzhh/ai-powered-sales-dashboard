@@ -71,6 +71,13 @@ def train(csv_path: Path):
     joblib.dump(model, MODEL_PATH)
     print(f"\n💾 Model saved to: {MODEL_PATH}")
 
+    # Save model weights to JSON for lightweight prediction
+    import json
+    model_json_path = MODEL_PATH.with_suffix('.json')
+    with open(model_json_path, 'w') as f:
+        json.dump({'coef': float(model.coef_[0]), 'intercept': float(model.intercept_)}, f)
+    print(f"💾 Model weights saved to: {model_json_path}")
+
     # Sample predictions
     print("\n📈 Sample Predictions:")
     for month in [13, 14, 15]:
@@ -81,9 +88,9 @@ def train(csv_path: Path):
     db_url = os.environ.get("DATABASE_URL")
     if db_url:
         try:
-            # Add parent directory to path for imports
-            sys.path.insert(0, str(BASE_DIR))
-            from services.database import save_model_metadata
+            # Add api directory to path for imports
+            sys.path.insert(0, str(BASE_DIR / 'api'))
+            from _services.database import save_model_metadata
             save_model_metadata(
                 accuracy=round(float(r2), 4),
                 algorithm="Linear Regression",

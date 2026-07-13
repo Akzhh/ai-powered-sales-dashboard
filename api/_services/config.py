@@ -5,6 +5,7 @@ from pathlib import Path
 # Base Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MODEL_PATH = BASE_DIR / "models" / "sales_model.pkl"
+MODEL_JSON_PATH = BASE_DIR / "models" / "sales_model.json"
 
 # Secret Keys
 SECRET_KEY = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')

@@ -1,6 +1,6 @@
 import logging
-from services.model_loader import ModelLoader
-from services.database import log_prediction
+from _services.model_loader import ModelLoader
+from _services.database import log_prediction
 
 logger = logging.getLogger(__name__)
 
@@ -11,10 +11,8 @@ def predict_sales(month: int) -> float:
     if model is None:
         raise ValueError("Machine learning model is not loaded or not trained yet.")
     
-    import pandas as pd
-    data = pd.DataFrame([[month]], columns=["Month"])
-    prediction = model.predict(data)
-    predicted_val = round(float(prediction[0]), 2)
+    prediction = model["intercept"] + model["coef"] * month
+    predicted_val = round(float(prediction), 2)
     
     # Log prediction in the database
     try:

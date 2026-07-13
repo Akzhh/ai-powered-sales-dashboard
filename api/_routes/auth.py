@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -8,9 +9,9 @@ from flask_cors import CORS
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-from services.database import get_user_by_username, check_user_credentials
-from services.auth_service import generate_token, verify_token, get_token_from_request
+from _services.config import SECRET_KEY, CORS_ORIGINS
+from _services.database import get_user_by_username, check_user_credentials
+from _services.auth_service import generate_token, verify_token, get_token_from_request
 
 # Configure logging
 logging.basicConfig(
@@ -20,14 +21,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+auth_bp = Blueprint("auth", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/login', methods=['POST'])
-@app.route('/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
     username = data.get('username')
@@ -47,13 +45,13 @@ def login():
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
 
-@app.route('/api/logout', methods=['POST'])
-@app.route('/logout', methods=['POST'])
+@auth_bp.route('/api/logout', methods=['POST'])
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     return jsonify({'success': True, 'message': 'Logged out successfully'})
 
-@app.route('/api/auth/status', methods=['GET'])
-@app.route('/auth/status', methods=['GET'])
+@auth_bp.route('/api/auth/status', methods=['GET'])
+@auth_bp.route('/auth/status', methods=['GET'])
 def auth_status():
     token = get_token_from_request()
     if not token:
@@ -68,5 +66,4 @@ def auth_status():
     else:
         return jsonify({'logged_in': False})
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+

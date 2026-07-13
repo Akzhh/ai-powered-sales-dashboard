@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -10,10 +11,10 @@ from flask_cors import CORS
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-from services.validation import validate_csv_header
-from services.database import log_uploaded_dataset, save_dataset_rows
-from services.auth_service import require_auth
+from _services.config import SECRET_KEY, CORS_ORIGINS
+from _services.validation import validate_csv_header
+from _services.database import log_uploaded_dataset, save_dataset_rows
+from _services.auth_service import require_auth
 
 # Configure logging
 logging.basicConfig(
@@ -23,16 +24,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+upload_bp = Blueprint("upload", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/upload', methods=['POST'])
-@app.route('/api/upload-csv', methods=['POST'])  # Backward compatibility
-@app.route('/upload', methods=['POST'])
-@app.route('/upload-csv', methods=['POST'])  # Backward compatibility
+@upload_bp.route('/api/upload', methods=['POST'])
+@upload_bp.route('/api/upload-csv', methods=['POST'])  # Backward compatibility
+@upload_bp.route('/upload', methods=['POST'])
+@upload_bp.route('/upload-csv', methods=['POST'])  # Backward compatibility
 @require_auth
 def upload_dataset():
     if 'file' not in request.files:
@@ -86,5 +84,4 @@ def upload_dataset():
         logger.error(f"CSV upload error: {e}")
         return jsonify({'error': f'Failed to process CSV: {str(e)}'}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+

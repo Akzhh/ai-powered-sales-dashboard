@@ -1,64 +1,13 @@
 {
+  "build": {
+    "env": {
+      "ENABLE_UV": "0"
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/predict",
-      "destination": "/api/predict/index.py"
-    },
-    {
-      "source": "/api/model/info",
-      "destination": "/api/predict/index.py"
-    },
-    {
-      "source": "/api/stats",
-      "destination": "/api/dashboard.py"
-    },
-    {
-      "source": "/api/sales/search",
-      "destination": "/api/sales.py"
-    },
-    {
-      "source": "/api/sales",
-      "destination": "/api/sales.py"
-    },
-    {
-      "source": "/api/sales/(.*)",
-      "destination": "/api/sales.py"
-    },
-    {
-      "source": "/api/upload",
-      "destination": "/api/upload.py"
-    },
-    {
-      "source": "/api/upload-csv",
-      "destination": "/api/upload.py"
-    },
-    {
-      "source": "/api/dataset",
-      "destination": "/api/history/index.py"
-    },
-    {
-      "source": "/api/export/excel",
-      "destination": "/api/history/index.py"
-    },
-    {
-      "source": "/api/export/pdf",
-      "destination": "/api/history/index.py"
-    },
-    {
-      "source": "/api/login",
-      "destination": "/api/auth.py"
-    },
-    {
-      "source": "/api/logout",
-      "destination": "/api/auth.py"
-    },
-    {
-      "source": "/api/auth/status",
-      "destination": "/api/auth.py"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/api/health.py"
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",

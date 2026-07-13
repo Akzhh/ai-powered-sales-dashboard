@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from flask import request, jsonify
-from services.config import JWT_SECRET
+from _services.config import JWT_SECRET
 
 logger = logging.getLogger(__name__)
 

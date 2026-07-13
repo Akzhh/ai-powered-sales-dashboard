@@ -1,6 +1,0 @@
-flask
-flask-cors
-openpyxl
-reportlab
-psycopg2-binary
-PyJWT

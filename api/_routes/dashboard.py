@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -8,9 +9,9 @@ from flask_cors import CORS
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-import services.database as database
-from services.auth_service import require_auth
+from _services.config import SECRET_KEY, CORS_ORIGINS
+import _services.database as database
+from _services.auth_service import require_auth
 
 # Configure logging
 logging.basicConfig(
@@ -20,14 +21,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+dashboard_bp = Blueprint("dashboard", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/stats', methods=['GET'])
-@app.route('/stats', methods=['GET'])
+@dashboard_bp.route('/api/stats', methods=['GET'])
+@dashboard_bp.route('/stats', methods=['GET'])
 @require_auth
 def get_stats():
     try:
@@ -43,5 +41,4 @@ def get_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+

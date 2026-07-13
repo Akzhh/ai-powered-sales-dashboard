@@ -1,3 +1,4 @@
+from flask import Blueprint
 import os
 import sys
 import re
@@ -10,9 +11,9 @@ from datetime import datetime
 # Add the parent api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.config import SECRET_KEY, CORS_ORIGINS
-import services.database as database
-from services.auth_service import require_auth
+from _services.config import SECRET_KEY, CORS_ORIGINS
+import _services.database as database
+from _services.auth_service import require_auth
 
 # Configure logging
 logging.basicConfig(
@@ -22,14 +23,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
+history_bp = Blueprint("history", __name__)
 
-# Enable CORS
-CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
 
-@app.route('/api/dataset', methods=['GET'])
-@app.route('/dataset', methods=['GET'])
+@history_bp.route('/api/dataset', methods=['GET'])
+@history_bp.route('/dataset', methods=['GET'])
 @require_auth
 def get_dataset():
     try:
@@ -38,8 +36,8 @@ def get_dataset():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/export/excel', methods=['GET'])
-@app.route('/export/excel', methods=['GET'])
+@history_bp.route('/api/export/excel', methods=['GET'])
+@history_bp.route('/export/excel', methods=['GET'])
 @require_auth
 def export_excel():
     try:
@@ -74,8 +72,8 @@ def export_excel():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/export/pdf', methods=['GET'])
-@app.route('/export/pdf', methods=['GET'])
+@history_bp.route('/api/export/pdf', methods=['GET'])
+@history_bp.route('/export/pdf', methods=['GET'])
 @require_auth
 def export_pdf():
     try:
@@ -84,7 +82,7 @@ def export_pdf():
         from reportlab.lib.styles import getSampleStyleSheet
         
         # Defer import to prevent loading pandas/sklearn globally
-        from services.forecast import predict_sales
+        from _services.forecast import predict_sales
 
         rows = database.view_sales()
         total_sales = sum(float(r[6]) for r in rows)
@@ -153,5 +151,4 @@ def export_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+
