@@ -1,11 +1,10 @@
+# pyrefly: ignore [missing-import]
 from flask import Blueprint
 import os
 import sys
-import re
 import tempfile
 import logging
-from flask import Flask, jsonify, send_file
-from flask_cors import CORS
+from flask import jsonify, send_file
 from datetime import datetime
 
 # Add the parent api directory to the sys.path

@@ -1,9 +1,8 @@
+# pyrefly: ignore [missing-import]
 from flask import Blueprint
 import os
 import sys
-import re
-from flask import Flask, jsonify
-from flask_cors import CORS
+from flask import jsonify
 
 # Add the root api directory to the sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+# pyrefly: ignore [missing-import]
 import joblib
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
@@ -88,9 +89,7 @@ def train(csv_path: Path):
     db_url = os.environ.get("DATABASE_URL")
     if db_url:
         try:
-            # Add api directory to path for imports
-            sys.path.insert(0, str(BASE_DIR / 'api'))
-            from _services.database import save_model_metadata
+            from api._services.database import save_model_metadata
             save_model_metadata(
                 accuracy=round(float(r2), 4),
                 algorithm="Linear Regression",
