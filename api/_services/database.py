@@ -67,7 +67,7 @@ def get_db_connection():
         conn = psycopg2.connect(_get_database_url(), connect_timeout=10)
         yield conn
     except psycopg2.OperationalError as e:
-        logger.error(f"Database connection failed: {type(e).__name__}")
+        logger.error(f"Database connection failed: {type(e).__name__} - {str(e)}")
         if conn:
             try:
                 conn.rollback()

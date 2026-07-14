@@ -29,7 +29,9 @@ def health():
     except Exception as e:
         db_status = "disconnected"
         db_error = str(e)
-        logger.error(f"Health check DB error: {e}")
+        if hasattr(e, '__cause__') and e.__cause__:
+            db_error += f" | Cause: {str(e.__cause__)}"
+        logger.error(f"Health check DB error: {db_error}")
 
     status_code = 200 if db_status == "connected" else 500
     return jsonify({
