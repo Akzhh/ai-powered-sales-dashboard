@@ -40,6 +40,10 @@ def _get_database_url():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+    # Convert Supabase direct port 5432 to pooler port 6543 (IPv4 fix for Vercel)
+    if ":5432" in db_url and "supabase" in db_url:
+        db_url = db_url.replace(":5432", ":6543")
+
     # Ensure SSL
     if "sslmode=" not in db_url:
         separator = "&" if "?" in db_url else "?"

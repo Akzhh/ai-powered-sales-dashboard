@@ -6,8 +6,7 @@ import logging
 # pyrefly: ignore [missing-import]
 from flask import jsonify, request
 
-# Add the root api directory to the sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Removed sys.path modification to avoid ModuleNotFoundError on Vercel
 
 from _services.config import SECRET_KEY, CORS_ORIGINS
 from _services.database import get_user_by_username, check_user_credentials

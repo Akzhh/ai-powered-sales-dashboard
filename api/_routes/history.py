@@ -7,8 +7,7 @@ import logging
 from flask import jsonify, send_file
 from datetime import datetime
 
-# Add the parent api directory to the sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Removed sys.path modification to avoid ModuleNotFoundError on Vercel
 
 from _services.config import SECRET_KEY, CORS_ORIGINS
 import _services.database as database

@@ -5,8 +5,7 @@ import sys
 import logging
 from flask import jsonify, request
 
-# Add the parent api directory to the sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Removed sys.path modification to avoid ModuleNotFoundError on Vercel
 
 from _services.config import SECRET_KEY, CORS_ORIGINS
 from _services.database import get_latest_model_metadata

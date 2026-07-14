@@ -4,6 +4,12 @@ import logging
 from flask import Flask
 from flask_cors import CORS
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Configure logging before any other imports
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +21,15 @@ logger = logging.getLogger(__name__)
 # Ensure the api directory is in sys.path for _services/_routes imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from _services.config import SECRET_KEY, CORS_ORIGINS
+from _services.config import SECRET_KEY, CORS_ORIGINS, DATABASE_URL
+
+# Startup Validation
+if not DATABASE_URL:
+    logger.critical("DATABASE_URL is missing. Application cannot start.")
+    sys.exit(1)
+if not DATABASE_URL.startswith("postgres://") and not DATABASE_URL.startswith("postgresql://"):
+    logger.critical("DATABASE_URL is malformed. Must be a PostgreSQL URI.")
+    sys.exit(1)
 
 from _routes.auth import auth_bp
 from _routes.dashboard import dashboard_bp

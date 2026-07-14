@@ -5,3 +5,4 @@ PyJWT
 openpyxl
 reportlab
 gunicorn
+python-dotenv

@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 # Base Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-MODEL_PATH = BASE_DIR / "models" / "sales_model.pkl"
-MODEL_JSON_PATH = BASE_DIR / "models" / "sales_model.json"
+MODEL_PATH = os.environ.get("MODEL_PATH", BASE_DIR / "models" / "sales_model.pkl")
+MODEL_JSON_PATH = os.environ.get("MODEL_JSON_PATH", BASE_DIR / "models" / "sales_model.json")
 
 # Secret Keys — use a safe default for local development only
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-fallback-secret-key-change-in-production')
