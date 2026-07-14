@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
-import sqlite3
-
-# Database Connection
-conn = sqlite3.connect("sales.db")
-cursor = conn.cursor()
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'api')))
+import _services.database as db
 
 # Create Window
 root = tk.Tk()
@@ -26,13 +25,12 @@ for col in columns:
 tree.pack(fill="both", expand=True)
 
 # Fetch Data
-cursor.execute("SELECT * FROM sales")
-
-for row in cursor.fetchall():
-    id, product, quantity, price = row
-    total = quantity * price
-    tree.insert("", tk.END, values=(id, product, quantity, price, total))
-
-conn.close()
+try:
+    rows = db.view_sales()
+    for row in rows:
+        id, date, product, category, quantity, price, total, profit = row
+        tree.insert("", tk.END, values=(id, product, quantity, price, total))
+except Exception as e:
+    print(f"Error fetching sales: {e}")
 
 root.mainloop()

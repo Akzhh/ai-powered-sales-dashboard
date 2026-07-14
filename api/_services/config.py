@@ -8,11 +8,19 @@ MODEL_PATH = BASE_DIR / "models" / "sales_model.pkl"
 MODEL_JSON_PATH = BASE_DIR / "models" / "sales_model.json"
 
 # Secret Keys
-SECRET_KEY = os.environ.get('SECRET_KEY', 'ai-sales-forecasting-dashboard-secret-key-2026')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is missing. It is required for secure authentication.")
+
 JWT_SECRET = os.environ.get("JWT_SECRET") or SECRET_KEY
 
-# Database
+# Environment Validation
+FLASK_ENV = os.environ.get("FLASK_ENV", "production")
+
+# Database Validation
 DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is missing. It is required for database connectivity.")
 
 # CORS Origins
 CORS_ORIGINS = [

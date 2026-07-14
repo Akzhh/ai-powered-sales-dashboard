@@ -1,5 +1,10 @@
-flask
-flask-cors
+Flask
+Flask-Cors
 psycopg2-binary
-PyJWT
-werkzeug
+pandas
+numpy
+scikit-learn
+joblib
+openpyxl
+reportlab
+gunicorn

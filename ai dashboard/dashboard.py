@@ -1,6 +1,9 @@
 from tkinter import *
 from tkinter import messagebox
-import sqlite3
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'api')))
+import _services.database as db
 
 
 # ---------------------------------
@@ -8,22 +11,23 @@ import sqlite3
 # ---------------------------------
 def load_dashboard():
 
-    conn = sqlite3.connect("database/sales.db")
-    cursor = conn.cursor()
+    total_sales = 0
+    total_profit = 0
+    total_orders = 0
 
-    # Total Sales Amount
-    cursor.execute("SELECT IFNULL(SUM(total),0) FROM sales")
-    total_sales = cursor.fetchone()[0]
+    try:
+        with db.get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COALESCE(SUM(total),0) FROM sales")
+                total_sales = cursor.fetchone()[0]
 
-    # Total Profit
-    cursor.execute("SELECT IFNULL(SUM(profit),0) FROM sales")
-    total_profit = cursor.fetchone()[0]
+                cursor.execute("SELECT COALESCE(SUM(profit),0) FROM sales")
+                total_profit = cursor.fetchone()[0]
 
-    # Total Orders
-    cursor.execute("SELECT COUNT(*) FROM sales")
-    total_orders = cursor.fetchone()[0]
-
-    conn.close()
+                cursor.execute("SELECT COUNT(*) FROM sales")
+                total_orders = cursor.fetchone()[0]
+    except Exception as e:
+        print(f"Error loading dashboard: {e}")
 
     lbl_sales.config(text="₹ {:.2f}".format(total_sales))
     lbl_profit.config(text="₹ {:.2f}".format(total_profit))
