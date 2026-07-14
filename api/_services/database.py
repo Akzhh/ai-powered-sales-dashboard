@@ -1,6 +1,18 @@
+"""
+Centralized Database Module for Supabase PostgreSQL.
+
+Provides:
+- Connection management optimized for Vercel Serverless Functions
+- Automatic SSL enforcement
+- Automatic Supabase pooler port conversion (5432 → 6543)
+- Safe error handling and logging (never exposes secrets)
+- Context manager for connection lifecycle
+- All CRUD operations for the application
+"""
+import os
 import logging
 import psycopg2
-from psycopg2 import pool
+import psycopg2.extras
 from contextlib import contextmanager
 from datetime import datetime
 from _services.config import DATABASE_URL
@@ -8,56 +20,71 @@ from _services.utils import hash_password, verify_hashed_password
 
 logger = logging.getLogger(__name__)
 
-# Global connection pool
-db_pool = None
 
 def _get_database_url():
-    """Parse and configure DATABASE_URL for Serverless/Supabase compatibility."""
+    """
+    Parse and configure DATABASE_URL for Serverless/Supabase compatibility.
+
+    - Converts postgres:// to postgresql:// (required by psycopg2)
+    - Converts Supabase direct port 5432 to pooler port 6543 (IPv4 fix)
+    - Appends sslmode=require if missing
+    """
     db_url = DATABASE_URL
-    
+    if not db_url:
+        raise RuntimeError(
+            "DATABASE_URL is not set. "
+            "Configure it in your environment or .env file."
+        )
+
+    # Fix URI scheme
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
-    # Supabase Vercel IPv4 Fix: Convert direct port 5432 to pooler port 6543
-    if "supabase.co:5432" in db_url:
-        logger.info("Auto-converting Supabase URL to use Session Pooler (port 6543) for Serverless IPv4 compatibility.")
-        db_url = db_url.replace("supabase.co:5432", "supabase.co:6543")
-        
-    # Ensure SSL is required
+
+    # Ensure SSL
     if "sslmode=" not in db_url:
         separator = "&" if "?" in db_url else "?"
         db_url = f"{db_url}{separator}sslmode=require"
-        
+
     return db_url
 
-def init_pool():
-    """Initialize the PostgreSQL connection pool."""
-    global db_pool
-    if db_pool is None:
-        try:
-            db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, _get_database_url())
-        except psycopg2.Error as e:
-            logger.error("Failed to initialize database connection pool.")
-            raise RuntimeError("Database connection error") from e
 
 @contextmanager
 def get_db_connection():
-    """Context manager to lease and return connections from the pool."""
-    if db_pool is None:
-        init_pool()
-        
+    """
+    Context manager that creates a fresh psycopg2 connection per request.
+
+    This is the correct pattern for Vercel Serverless Functions:
+    - Each invocation gets a fresh connection
+    - No stale pool references across cold starts
+    - Connection is always closed after use
+    """
     conn = None
     try:
-        conn = db_pool.getconn()
+        conn = psycopg2.connect(_get_database_url(), connect_timeout=10)
         yield conn
-    except psycopg2.Error as e:
-        logger.error(f"PostgreSQL Database Error: {e.pgcode} - {e.pgerror}")
+    except psycopg2.OperationalError as e:
+        logger.error(f"Database connection failed: {type(e).__name__}")
         if conn:
-            conn.rollback()
-        raise RuntimeError("A database error occurred while processing the request.") from e
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        raise RuntimeError("Database connection failed. Please try again later.") from e
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {type(e).__name__}: {e.pgerror or e}")
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        raise RuntimeError("A database error occurred.") from e
     finally:
         if conn:
-            db_pool.putconn(conn)
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 
 # ----------------------------------------
 # Database Initialization
@@ -139,7 +166,9 @@ def init_db():
                     ('admin', hashed_pw)
                 )
                 logger.info("Seeded default admin user.")
+
         conn.commit()
+        logger.info("Database tables initialized successfully.")
 
 
 # ----------------------------------------

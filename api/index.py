@@ -1,9 +1,20 @@
 import os
 import sys
+import logging
 from flask import Flask
 from flask_cors import CORS
 
+# Configure logging before any other imports
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
+# Ensure the api directory is in sys.path for _services/_routes imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from _services.config import SECRET_KEY, CORS_ORIGINS
 
 from _routes.auth import auth_bp
@@ -25,6 +36,14 @@ app.register_blueprint(sales_bp)
 app.register_blueprint(upload_bp)
 app.register_blueprint(history_bp)
 app.register_blueprint(predict_bp)
+
+# Initialize database tables on first load
+try:
+    from _services.database import init_db
+    init_db()
+    logger.info("Database initialized successfully on startup.")
+except Exception as e:
+    logger.error(f"Database initialization failed: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
