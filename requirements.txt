@@ -1,10 +1,4 @@
 Flask
 Flask-Cors
 psycopg2-binary
-pandas
-numpy
-scikit-learn
-joblib
-openpyxl
-reportlab
 gunicorn
