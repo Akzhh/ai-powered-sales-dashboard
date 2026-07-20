@@ -161,6 +161,28 @@ def init_db():
                 )
             """)
 
+            # 7. Training Logs
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS training_logs(
+                    id SERIAL PRIMARY KEY,
+                    r2_score DOUBLE PRECISION,
+                    mae DOUBLE PRECISION,
+                    rmse DOUBLE PRECISION,
+                    mse DOUBLE PRECISION,
+                    training_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status VARCHAR(50) DEFAULT 'TRAINED'
+                )
+            """)
+
+            # 8. Forecast History
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS forecast_history(
+                    id SERIAL PRIMARY KEY,
+                    forecast_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    forecast_data JSONB NOT NULL
+                )
+            """)
+
             # Seed default admin user (hashed password)
             cursor.execute("SELECT id FROM users WHERE username = %s", ('admin',))
             if not cursor.fetchone():
@@ -224,21 +246,57 @@ def insert_sale(date, product, category, quantity, price, total, profit):
         conn.commit()
 
 
-def view_sales():
+def view_sales(limit=None):
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM sales ORDER BY id ASC")
-            return cursor.fetchall()
+            if limit:
+                cursor.execute(
+                    "SELECT id, date, product, category, quantity, price, total, profit "
+                    "FROM sales ORDER BY id DESC LIMIT %s", (limit,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, date, product, category, quantity, price, total, profit "
+                    "FROM sales ORDER BY id ASC"
+                )
+            rows = cursor.fetchall()
+            return [
+                {
+                    'id': r[0],
+                    'date': r[1],
+                    'product': r[2],
+                    'category': r[3],
+                    'quantity': r[4],
+                    'price': r[5],
+                    'total': r[6],
+                    'profit': r[7]
+                }
+                for r in rows
+            ]
 
 
 def search_sale(product):
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT * FROM sales WHERE product ILIKE %s",
+                "SELECT id, date, product, category, quantity, price, total, profit "
+                "FROM sales WHERE product ILIKE %s ORDER BY id ASC",
                 ('%' + product + '%',)
             )
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+            return [
+                {
+                    'id': r[0],
+                    'date': r[1],
+                    'product': r[2],
+                    'category': r[3],
+                    'quantity': r[4],
+                    'price': r[5],
+                    'total': r[6],
+                    'profit': r[7]
+                }
+                for r in rows
+            ]
 
 
 def update_sale(id, date, product, category, quantity, price, total, profit):

@@ -21,10 +21,10 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @require_auth
 def get_stats():
     try:
-        rows = database.view_sales()
-        total_sales = sum(float(r[6]) for r in rows)
-        total_profit = sum(float(r[7]) for r in rows)
-        total_orders = len(rows)
+        sales_list = database.view_sales()
+        total_sales = sum(float(s['total']) for s in sales_list)
+        total_profit = sum(float(s['profit']) for s in sales_list)
+        total_orders = len(sales_list)
         return jsonify({
             'total_sales': round(total_sales, 2),
             'total_profit': round(total_profit, 2),
