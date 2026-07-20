@@ -1,14 +1,7 @@
 # pyrefly: ignore [missing-import]
-from flask import Blueprint
-import os
-import sys
+from flask import Blueprint, jsonify, request
 import logging
-from flask import jsonify, request
 
-# Removed sys.path modification to avoid ModuleNotFoundError on Vercel
-
-from _services.config import SECRET_KEY, CORS_ORIGINS
-from _services.database import get_latest_model_metadata
 from _services.auth_service import require_auth
 
 # Configure logging
@@ -49,22 +42,46 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@predict_bp.route('/api/model/info', methods=['GET'])
-@predict_bp.route('/model/info', methods=['GET'])
+@predict_bp.route('/api/predict/transaction', methods=['POST'])
+@predict_bp.route('/predict/transaction', methods=['POST'])
 @require_auth
-def model_info():
+def predict_transaction():
+    data = request.get_json() or {}
     try:
-        metadata = get_latest_model_metadata()
-        if metadata:
-            return jsonify(metadata)
-        else:
-            return jsonify({
-                "accuracy": 0.0,
-                "algorithm": "Linear Regression (Not trained yet)",
-                "training_date": "N/A",
-                "dataset_size": 0
-            })
+        date = data.get('date')
+        product = data.get('product')
+        category = data.get('category')
+        quantity = int(data.get('quantity', 1))
+        price = float(data.get('price', 0))
+
+        total = quantity * price
+        # Simple heuristic: predict 20% profit margin as a baseline if ML doesn't have it
+        predicted_profit = round(total * 0.20, 2)
+
+        # Save to forecast_history table (JSONB)
+        from _services.database import get_db_connection
+        import json
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                payload = json.dumps({
+                    "date": date,
+                    "product": product,
+                    "category": category,
+                    "quantity": quantity,
+                    "price": price,
+                    "total": total,
+                    "predicted_profit": predicted_profit
+                })
+                cursor.execute(
+                    "INSERT INTO forecast_history (forecast_data) VALUES (%s)",
+                    (payload,)
+                )
+            conn.commit()
+
+        return jsonify({
+            'success': True,
+            'total': total,
+            'predicted_profit': predicted_profit
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-

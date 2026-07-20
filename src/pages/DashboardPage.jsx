@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import { getStats, getSales, getModelInfo } from '../api';
+import { getStats, getSales } from '../api';
 import { useToast } from '../components/Toast';
 import StatCard from '../components/StatCard';
 
@@ -13,7 +13,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ total_sales: 0, total_profit: 0, total_orders: 0 });
   const [sales, setSales] = useState([]);
-  const [modelInfo, setModelInfo] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -21,10 +20,9 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const [statsRes, salesRes, infoRes] = await Promise.all([
+      const [statsRes, salesRes] = await Promise.all([
         getStats(),
-        getSales(),
-        getModelInfo(),
+        getSales(100),
       ]);
 
       if (statsRes.ok) setStats(statsRes.data);
@@ -32,8 +30,6 @@ export default function DashboardPage() {
 
       if (salesRes.ok) setSales(salesRes.data);
       else showToast('Failed to load sales records', 'error');
-
-      if (infoRes.ok) setModelInfo(infoRes.data);
     } catch {
       showToast('Connection error loading dashboard', 'error');
     }
@@ -100,39 +96,6 @@ export default function DashboardPage() {
           icon="fa-shopping-bag"
           colorClass="orange"
         />
-      </div>
-
-      {/* AI Model Status Card */}
-      <div className="glass-card ai-model-card" style={{ marginBottom: '24px' }}>
-        <div className="card-header" style={{ marginBottom: '16px' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <i className="fa-solid fa-brain" style={{ color: 'var(--accent-purple)' }} />
-            AI Sales Forecasting Model
-          </h3>
-          <span className="badge">
-            PRE-TRAINED
-          </span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', alignItems: 'center' }}>
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>Algorithm</p>
-            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'white' }}>{modelInfo?.algorithm || 'Linear Regression'}</h4>
-          </div>
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>Model Accuracy (R²)</p>
-            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--accent-blue)' }}>
-              {modelInfo?.accuracy ? `${(modelInfo.accuracy * 100).toFixed(2)}%` : 'N/A'}
-            </h4>
-          </div>
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>Dataset Size</p>
-            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'white' }}>{modelInfo?.dataset_size ? `${modelInfo.dataset_size} rows` : '0 rows'}</h4>
-          </div>
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>Last Trained</p>
-            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'white' }}>{modelInfo?.training_date || 'N/A'}</h4>
-          </div>
-        </div>
       </div>
 
       {/* Dashboard Grid */}

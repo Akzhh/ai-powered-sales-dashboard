@@ -1,13 +1,7 @@
 # pyrefly: ignore [missing-import]
-from flask import Blueprint
-import os
-import sys
+from flask import Blueprint, jsonify
 import logging
-from flask import jsonify
 
-# Removed sys.path modification to avoid ModuleNotFoundError on Vercel
-
-from _services.config import SECRET_KEY, CORS_ORIGINS
 import _services.database as database
 from _services.auth_service import require_auth
 
@@ -38,5 +32,3 @@ def get_stats():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-

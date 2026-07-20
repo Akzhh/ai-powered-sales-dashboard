@@ -100,8 +100,9 @@ export async function checkAuthStatus() {
 // ----------------------------------------
 // Sales CRUD
 // ----------------------------------------
-export async function getSales() {
-  const res = await request('/sales');
+export async function getSales(limit = null) {
+  const url = limit ? `/sales?limit=${limit}` : '/sales';
+  const res = await request(url);
   return { ok: res.ok, data: await res.json() };
 }
 
@@ -158,8 +159,11 @@ export async function predictSales(month) {
   return { ok: res.ok, data: await res.json() };
 }
 
-export async function getModelInfo() {
-  const res = await request('/model/info');
+export async function predictTransaction(transactionData) {
+  const res = await request('/predict/transaction', {
+    method: 'POST',
+    body: JSON.stringify(transactionData),
+  });
   return { ok: res.ok, data: await res.json() };
 }
 
